@@ -1,37 +1,128 @@
-from django.shortcuts import render, redirect, get_object_or_404
-from .models import Task
+from rest_framework import status
+from rest_framework.response import Response
+from rest_framework.decorators import api_view
+from .models import Goal, SubTask
+from .serializers import GoalSerializer, SubTaskSerializer
 
-# Display all tasks
-def task_list(request):
-    tasks = Task.objects.all()  # Get all tasks from the database
-    return render(request, 'my_goals/task_list.html', {'tasks': tasks})
+# ---------- Goals Views ----------
 
-# Add a new task
-def add_task(request):
+@api_view(['GET'])
+def goal_list(request):
+    if request.method == 'GET':
+        goals = Goal.objects.all()
+        serializer = GoalSerializer(goals, many=True)
+        return Response(serializer.data)
+
+@api_view(['POST'])
+def goal_create(request):
     if request.method == 'POST':
-        title = request.POST['title']
-        Task.objects.create(title=title)
-        return redirect('task_list')  # Redirect to the task list after adding the task
-    return render(request, 'my_goals/add_task.html')
+        serializer = GoalSerializer(data=request.data)
+        if serializer.is_valid():
+            # Save the goal instance
+            goal = serializer.save()
+            
+            # Handle nested subtasks if any
+            subtasks_data = request.data.get('subtasks', [])
+            for subtask_data in subtasks_data:
+                SubTask.objects.create(goal=goal, **subtask_data)
+            
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-# Mark task as complete
-def complete_task(request, task_id):
-    task = Task.objects.get(id=task_id)
-    task.completed = True
-    task.save()
-    return redirect('task_list')
+@api_view(['GET'])
+def goal_detail(request, pk):
+    try:
+        goal = Goal.objects.get(pk=pk)
+    except Goal.DoesNotExist:
+        return Response(status=status.HTTP_404_NOT_FOUND)
 
-def edit_task(request, task_id):
-    task = get_object_or_404(Task, id=task_id)
+    if request.method == 'GET':
+        serializer = GoalSerializer(goal)
+        return Response(serializer.data)
+
+@api_view(['PUT'])
+def goal_update(request, pk):
+    try:
+        goal = Goal.objects.get(pk=pk)
+    except Goal.DoesNotExist:
+        return Response(status=status.HTTP_404_NOT_FOUND)
+
+    if request.method == 'PUT':
+        serializer = GoalSerializer(goal, data=request.data)
+        if serializer.is_valid():
+            # Save the updated goal instance
+            updated_goal = serializer.save()
+
+            # Handle nested subtasks
+            SubTask.objects.filter(goal=updated_goal).delete()  # Remove existing subtasks
+            subtasks_data = request.data.get('subtasks', [])
+            for subtask_data in subtasks_data:
+                SubTask.objects.create(goal=updated_goal, **subtask_data)
+                
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['DELETE'])
+def goal_delete(request, pk):
+    try:
+        goal = Goal.objects.get(pk=pk)
+    except Goal.DoesNotExist:
+        return Response(status=status.HTTP_404_NOT_FOUND)
+
+    if request.method == 'DELETE':
+        goal.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+# ---------- Subtasks Views ----------
+
+@api_view(['GET'])
+def subtask_list(request):
+    if request.method == 'GET':
+        subtasks = SubTask.objects.all()
+        serializer = SubTaskSerializer(subtasks, many=True)
+        return Response(serializer.data)
+
+@api_view(['POST'])
+def subtask_create(request):
     if request.method == 'POST':
-        task.title = request.POST['title']
-        task.description = request.POST.get('description', '')
-        task.save()
-        return redirect('task_list')
-    return render(request, 'todo/edit_task.html', {'task': task})
+        serializer = SubTaskSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-# Delete an existing task
-def delete_task(request, task_id):
-    task = get_object_or_404(Task, id=task_id)
-    task.delete()
-    return redirect('task_list')
+@api_view(['GET'])
+def subtask_detail(request, pk):
+    try:
+        subtask = SubTask.objects.get(pk=pk)
+    except SubTask.DoesNotExist:
+        return Response(status=status.HTTP_404_NOT_FOUND)
+
+    if request.method == 'GET':
+        serializer = SubTaskSerializer(subtask)
+        return Response(serializer.data)
+
+@api_view(['PUT'])
+def subtask_update(request, pk):
+    try:
+        subtask = SubTask.objects.get(pk=pk)
+    except SubTask.DoesNotExist:
+        return Response(status=status.HTTP_404_NOT_FOUND)
+
+    if request.method == 'PUT':
+        serializer = SubTaskSerializer(subtask, data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['DELETE'])
+def subtask_delete(request, pk):
+    try:
+        subtask = SubTask.objects.get(pk=pk)
+    except SubTask.DoesNotExist:
+        return Response(status=status.HTTP_404_NOT_FOUND)
+
+    if request.method == 'DELETE':
+        subtask.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
