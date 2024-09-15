@@ -6,18 +6,29 @@ class SubTaskSerializer(serializers.ModelSerializer):
         model = SubTask
         fields = '__all__'
 
-class GoalSerializer(serializers.ModelSerializer):
-    subtasks = SubTaskSerializer(many=True, write_only=True)  # Use write_only for POST and PUT requests
+class GoalWithSubtasksSerializer(serializers.ModelSerializer):
+    subtasks = SubTaskSerializer(many=True, read_only=True)
 
     class Meta:
         model = Goal
         fields = '__all__'
+        read_only_fields = ['section_name', 'created_date']
+
+class GoalSerializer(serializers.ModelSerializer):
+    # jak bylo odkomentowane to subtasks bylo jednym z pol
+    #subtasks = SubTaskSerializer(many=True, write_only=True)  # Use write_only for POST and PUT requests
+
+    class Meta:
+        model = Goal
+        fields = '__all__'
+        read_only_fields = ['section_name', 'created_date', 'subtasks']
+
 
     def create(self, validated_data):
-        subtasks_data = validated_data.pop('subtasks', [])
+        """ subtasks_data = validated_data.pop('subtasks', []) """
         goal = Goal.objects.create(**validated_data)
-        for subtask_data in subtasks_data:
-            SubTask.objects.create(goal=goal, **subtask_data)
+        """ for subtask_data in subtasks_data:
+            SubTask.objects.create(goal=goal, **subtask_data) """
         return goal
 
     def update(self, instance, validated_data):
