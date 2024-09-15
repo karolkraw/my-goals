@@ -12,9 +12,9 @@ urlpatterns = [
 
 
     # ---------- SubTasks URLs ----------
-    path('subtasks/', views.subtask_list, name='subtask-list'),
-    path('subtasks/create/', views.subtask_create, name='subtask-create'),
-    path('subtasks/<int:pk>/', views.subtask_detail, name='subtask-detail'),
-    path('subtasks/<int:pk>/update/', views.subtask_update, name='subtask-update'),
-    path('subtasks/<int:pk>/delete/', views.subtask_delete, name='subtask-delete'),
+    path('goals/subtasks/', views.subtask_list, name='subtask-list'),
+    path('goals/subtasks/create/<str:sectionName>/<str:goalTitle>/', views.subtask_create, name='subtask-create'),
+    path('goals/subtasks/<int:pk>/', views.subtask_detail, name='subtask-detail'),
+    path('goals/subtasks/<int:pk>/update/', views.subtask_update, name='subtask-update'),
+    path('goals/subtasks/delete/<str:sectionName>/<str:taskTitle>/<str:subtaskTitle>/', views.subtask_delete, name='subtask-delete'),
 ]
