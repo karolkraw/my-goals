@@ -13,8 +13,8 @@ class Goal(models.Model):
     deadline = models.DateField(default=get_current_date)
     section_name = models.CharField(max_length=255)
 
-    def __str__(self):
-        return self.title
+    """  def __str__(self):
+        return self.title """
 
 class SubTask(models.Model):
     goal = models.ForeignKey(Goal, related_name='subtasks', on_delete=models.CASCADE)
