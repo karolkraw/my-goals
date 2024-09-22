@@ -7,7 +7,8 @@ class KafkaConsumer:
     def __init__(self):
         self.consumer = Consumer({
             'bootstrap.servers': os.getenv('KAFKA_BOOTSTRAP_SERVERS', 'kafka:9092'),
-            'group.id': 'goal-consumer-group',  # Consumer group ID
+            #'group.id': 'goal-consumer-group',  # Consumer group ID
+            'group.id': 'history-service-group',  # Consumer group ID
             'auto.offset.reset': 'earliest',  # Start reading from the beginning
             'session.timeout.ms': 30000,
             'heartbeat.interval.ms': 3000,

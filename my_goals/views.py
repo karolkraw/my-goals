@@ -27,8 +27,12 @@ def poll_goal_history(request, sectionName):
     result = r.get(f"goal_history_{sectionName}")
 
     if result:
-        # If result exists in Redis, return it
-        return JsonResponse({"data": result}, status=200)
+        # Decode the byte result to a string and then parse it as JSON
+        result_str = result.decode('utf-8')
+        result_json = json.loads(result_str)
+
+        # If result exists in Redis, return it as JSON
+        return JsonResponse({"data": result_json}, status=200)
     else:
         # Still processing, no result yet
         return JsonResponse({"status": "processing"}, status=202)
