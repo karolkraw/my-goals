@@ -1,0 +1,7 @@
+Django>=3.2,<4.0
+djangorestframework>=3.12,<4.0
+django-cors-headers>=3.7,<4.0
+celery>=5.0,<6.0
+redis>=3.5,<4.0
+mysqlclient>=2.0
+confluent_kafka>=1.7,<2.0
