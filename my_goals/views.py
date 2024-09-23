@@ -24,12 +24,14 @@ kafka_consumer = KafkaConsumer()
 @api_view(['GET'])
 def poll_goal_history(request, sectionName):
     # Try fetching the result from Redis
+    print("READ FROM REDIS")
     result = r.get(f"goal_history_{sectionName}")
 
     if result:
         # Decode the byte result to a string and then parse it as JSON
         result_str = result.decode('utf-8')
         result_json = json.loads(result_str)
+        print("REturn 200")
 
         # If result exists in Redis, return it as JSON
         return JsonResponse({"data": result_json}, status=200)
@@ -53,9 +55,9 @@ def goal_history_list(request, sectionName):
 
 
         #kafka_producer.send_message('history-topic', 'history', message=sectionName)
-        print("nnnnnn: ")
+        print("NNNNNNNN: ")
         task = retrieve_goal_history.delay(sectionName)
-        print("yyyyyyyyyyy: ")
+        print("YYYYYYYYYY: ")
 
         # Return a response with task_id for polling
         return JsonResponse({"task_id": task.id, "status": "processing"}, status=202)

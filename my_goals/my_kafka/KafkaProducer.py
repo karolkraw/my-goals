@@ -4,7 +4,7 @@ import os
 
 class KafkaProducer:
     def __init__(self):
-        self.producer = Producer({'bootstrap.servers': os.getenv('KAFKA_BOOTSTRAP_SERVERS', 'localhost:9092')})  # Kafka broker URL
+        self.producer = Producer({'bootstrap.servers': os.getenv('KAFKA_BOOTSTRAP_SERVERS', 'localhost:9093')})  # Kafka broker URL
 
     def delivery_report(self, err, msg):
         if err is not None:
