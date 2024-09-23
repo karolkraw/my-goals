@@ -1,13 +1,15 @@
 import os
-import json
 import time
+import json
 from confluent_kafka import Consumer, KafkaError
+from confluent_kafka.admin import AdminClient, NewTopic
 from my_goals.models import Goal
 
 class KafkaConsumer:
     def __init__(self, max_retries=5, retry_delay=5):
         """
         Initializes the Kafka consumer with retries and subscription to the topic.
+        Creates the topic if it doesn't exist.
         """
         self.consumer_config = {
             'bootstrap.servers': os.getenv('KAFKA_BOOTSTRAP_SERVERS', 'localhost:9092'),
@@ -16,12 +18,40 @@ class KafkaConsumer:
             'heartbeat.interval.ms': 10000,  # 10 seconds
             'auto.offset.reset': 'earliest',  # Start from the earliest if no committed offset is found
             'enable.auto.commit': True,
-
         }
         self.max_retries = max_retries
         self.retry_delay = retry_delay
         self.topic = 'retrieved-goals-topic'
+        
+        # Create admin client with configuration
+        self.admin_client = AdminClient(self.consumer_config)
+        self.check_and_create_topic()
+        
         self.create_consumer()
+
+    def check_and_create_topic(self):
+        """
+        Check if the topic exists and create it if it doesn't.
+        """
+        try:
+            # List existing topics
+            metadata = self.admin_client.list_topics(timeout=10)
+            topics = metadata.topics  # Get the topics from the metadata
+            
+            if self.topic not in topics:
+                print(f"Topic '{self.topic}' does not exist. Creating...")
+                # Use 'topic' instead of 'name' as the first argument
+                new_topic = NewTopic(topic=self.topic, num_partitions=1, replication_factor=1)
+                self.admin_client.create_topics([new_topic])
+                print(f"Topic '{self.topic}' created successfully.")
+            else:
+                print(f"Topic '{self.topic}' already exists.")
+        except Exception as e:
+            print(f"Error in checking/creating topic: {e}")
+            raise
+        
+    
+
 
     def create_consumer(self):
         """

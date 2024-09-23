@@ -57,6 +57,7 @@ def goal_history_list(request, sectionName):
         #kafka_producer.send_message('history-topic', 'history', message=sectionName)
         print("NNNNNNNN: ")
         task = retrieve_goal_history.delay(sectionName)
+        #task = retrieve_goal_history(sectionName)
         print("YYYYYYYYYY: ")
 
         # Return a response with task_id for polling
