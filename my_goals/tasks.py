@@ -22,7 +22,7 @@ def retrieve_goal_history(sectionName):
     response_data = consumer.consume_messages()
     print("FFFFFFFFFFFFFFFFF: " + str(response_data))
     serialized_data = json.dumps(response_data)
-
+    
     # Store result in Redis
     r.set(f"goal_history_{sectionName}", serialized_data)
 
