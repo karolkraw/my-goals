@@ -8,13 +8,21 @@ services:
   kafka:
     image: wurstmeister/kafka
     ports:
-      - "9092:9092"    # External access for apps running outside Docker
-      - "9093:9093"    # Internal access for Docker containers
+      - "9092:9092"
+      - "9093:9093"
     environment:
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092,PLAINTEXT_HOST://kafka:9093
-      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092,PLAINTEXT_HOST://0.0.0.0:9093
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092,PLAINTEXT_DOCKER://kafka:9093
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092,PLAINTEXT_DOCKER://0.0.0.0:9093
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_DOCKER:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT_DOCKER
+    depends_on:
+      - zookeeper
+    healthcheck:
+      test: ["CMD", "nc", "-z", "localhost", "9093"]
+      interval: 10s
+      retries: 10
+      start_period: 10s
 
   redis:
     image: "redis:latest"
@@ -36,3 +44,35 @@ services:
       - KAFKA_BOOTSTRAP_SERVERS=kafka:9093  # Internal Docker access
       - REDIS=redis
 
+  prometheus:
+    image: prom/prometheus:latest
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+    ports:
+      - "9090:9090"
+
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana-storage:/var/lib/grafana
+    depends_on:
+      - prometheus
+
+  kafka-exporter:
+    image: danielqsj/kafka-exporter
+    ports:
+      - "9308:9308"
+    command: ["--kafka.server=kafka:9093"]
+    #environment:
+      #KAFKA_BROKERS: kafka:9093
+    depends_on:
+      - kafka
+    restart: on-failure
+
+
+volumes:
+  grafana-storage:
