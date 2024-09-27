@@ -14,8 +14,8 @@ class KafkaConsumer:
         self.consumer_config = {
             'bootstrap.servers': os.getenv('KAFKA_BOOTSTRAP_SERVERS', 'localhost:9092'),
             'group.id': 'retrieved-goals-group',
-            'session.timeout.ms': 45000,  # 45 seconds
-            'heartbeat.interval.ms': 10000,  # 10 seconds
+            #'session.timeout.ms': 45000,  # 45 seconds
+            #'heartbeat.interval.ms': 10000,  # 10 seconds
             'auto.offset.reset': 'earliest',  # Start from the earliest if no committed offset is found
             'enable.auto.commit': True,
         }
@@ -80,7 +80,7 @@ class KafkaConsumer:
         try:
             while True:
                 print("berofe polling")
-                msg = self.consumer.poll(timeout=5.0)
+                msg = self.consumer.poll(1.0)
                 print("after polling")
                 if msg is None:
                     print("msg is none")
