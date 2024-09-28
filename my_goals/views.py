@@ -14,6 +14,9 @@ from .tasks import retrieve_goal_history
 import redis
 import os
 
+from confluent_kafka import Consumer
+
+
 
 r = redis.StrictRedis(host=os.getenv('REDIS', 'localhost'), port=6379, db=0)
 
@@ -21,7 +24,7 @@ r = redis.StrictRedis(host=os.getenv('REDIS', 'localhost'), port=6379, db=0)
 kafka_producer = KafkaProducer()
 kafka_consumer = KafkaConsumer()
 
-@api_view(['GET'])
+api_view(['GET'])
 def poll_goal_history(request, sectionName):
     # Try fetching the result from Redis
     print("READ FROM REDIS")
@@ -39,12 +42,42 @@ def poll_goal_history(request, sectionName):
         # Still processing, no result yet
         return JsonResponse({"status": "processing"}, status=202)
 
+
 @api_view(['GET'])
 def goal_list(request, sectionName):
     if request.method == 'GET':
         goals = Goal.objects.filter(section_name=sectionName).order_by('deadline').reverse()
         serializer = GoalWithSubtasksSerializer(goals, many=True)
         return Response(serializer.data)
+    """ producer = KafkaProducer()
+    
+    producer.send_message('retrieved-goals-topic', 'histdsfory', sectionName)
+    
+    
+    c = Consumer({
+        'bootstrap.servers': os.getenv('KAFKA_BOOTSTRAP_SERVERS', 'localhost:9092'),
+        'group.id': 'retrieved-goals-group',
+    })
+    
+    c.subscribe(['retrieved-goals-topic'])
+    
+    while True:
+        msg = c.poll(1.0)
+
+        if msg is None:
+            print("NONE")
+            continue
+        if msg.error():
+            print("Consumer error: {}".format(msg.error()))
+            continue
+
+        print('Received message: {}'.format(msg.value().decode('utf-8')))
+
+        c.close()
+        if request.method == 'GET':
+            goals = Goal.objects.filter(section_name=sectionName).order_by('deadline').reverse()
+            serializer = GoalWithSubtasksSerializer(goals, many=True)
+            return Response(serializer.data) """
     
 @api_view(['GET'])
 def goal_history_list(request, sectionName):

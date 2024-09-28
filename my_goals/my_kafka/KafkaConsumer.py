@@ -6,29 +6,25 @@ from confluent_kafka.admin import AdminClient, NewTopic
 from my_goals.models import Goal
 
 class KafkaConsumer:
-    def __init__(self, max_retries=5, retry_delay=5):
-        """
-        Initializes the Kafka consumer with retries and subscription to the topic.
-        Creates the topic if it doesn't exist.
-        """
-        self.consumer_config = {
-            'bootstrap.servers': os.getenv('KAFKA_BOOTSTRAP_SERVERS', 'localhost:9092'),
-            'group.id': 'retrieved-goals-group',
-            #'session.timeout.ms': 45000,  # 45 seconds
-            #'heartbeat.interval.ms': 10000,  # 10 seconds
-            'auto.offset.reset': 'earliest',  # Start from the earliest if no committed offset is found
-            'enable.auto.commit': True,
-        }
-        self.max_retries = max_retries
-        self.retry_delay = retry_delay
-        self.topic = 'retrieved-goals-topic'
+    def __init__(self):
         
-        # Create admin client with configuration
-        self.admin_client = AdminClient(self.consumer_config)
+        
+        #self.admin_client = AdminClient(self.consumer_config)
+        self.admin_client = AdminClient({'bootstrap.servers': os.getenv('KAFKA_BOOTSTRAP_SERVERS', 'localhost:9092')})
+        self.topic = 'retrieved-goals-topic'
+
         self.check_and_create_topic()
         
-        self.create_consumer()
-
+        self.consumer = Consumer({
+            'bootstrap.servers': os.getenv('KAFKA_BOOTSTRAP_SERVERS', 'localhost:9092'),
+            'group.id': 'test_group',
+            #'group.id': 'retrieved-goals-group',
+            'auto.offset.reset': 'earliest',
+            #'enable.auto.commit': True,
+        })
+        #self.consumer.subscribe([self.topic])
+              
+        
     def check_and_create_topic(self):
         """
         Check if the topic exists and create it if it doesn't.
@@ -53,27 +49,10 @@ class KafkaConsumer:
     
 
 
-    def create_consumer(self):
-        """
-        Create the Kafka consumer and subscribe to the topic with retry logic.
-        """
-        retries = 0
-        print("CREATE CONSUMER")
-        while retries < self.max_retries:
-            try:
-                self.consumer = Consumer(self.consumer_config)
-                self.consumer.subscribe([self.topic])
-                print(f"Successfully subscribed to topic: {self.topic}")
-                return
-            except KafkaError as e:
-                print(f"Error subscribing to topic: {e}")
-                retries += 1
-                print(f"Retrying ({retries}/{self.max_retries}) in {self.retry_delay} seconds...")
-                time.sleep(self.retry_delay)
-        
-        raise Exception(f"Failed to subscribe to topic '{self.topic}' after {self.max_retries} attempts")
-
+   
     def consume_messages(self):
+        self.consumer.subscribe([self.topic])
+
         """
         Continuously poll and consume messages from the Kafka topic.
         """
