@@ -1,4 +1,4 @@
-from datetime import timezone
+from django.utils import timezone
 import json
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404
@@ -7,7 +7,7 @@ from rest_framework.response import Response
 from rest_framework.decorators import api_view
 from django.views.decorators.csrf import csrf_exempt
 from .models import Goal, SubTask
-from .serializers import GoalSerializer, SubTaskSerializer, GoalWithSubtasksSerializer
+from .serializers import GoalSerializer, GoalWithSubtasksKafkaMessageSerializer, SubTaskSerializer, GoalWithSubtasksSerializer
 from .my_kafka.KafkaProducer import KafkaProducer
 from .my_kafka.KafkaConsumer import KafkaConsumer
 from .tasks import retrieve_goal_history
@@ -99,27 +99,37 @@ def goal_delete(request, sectionName, pk):
 @api_view(['DELETE'])
 def complete_goal(request, sectionName, goalTitle):
     try:
-        goal = get_object_or_404(Goal, title=goalTitle, sectionName = sectionName)
+        goal = get_object_or_404(Goal, title=goalTitle, section_name=sectionName)
     except (Goal.DoesNotExist):
         return Response({"error": "Goal or not found."}, status=status.HTTP_404_NOT_FOUND)
-    if request.method == 'PATCH':
-        subtasks = goal.subtasks.all()
-        serializer = GoalSerializer(goal)
+    #if request.method == 'PATCH':
+    #subtasks = goal.subtasks.all()
+    goal.completed_date = timezone.now().date()
+    serializer = GoalWithSubtasksKafkaMessageSerializer(goal)
+    
+    
 
-        goal_data = {
-            'title': goal.title,
-            'description': goal.description,
-            'createdDate': goal.created_date,
-            'completedDate': timezone.now().date(),
-            'section': sectionName,
-            'subtasks': subtasks
-        }
+    #serializer = GoalSerializer(goal)
 
-        kafka_producer.send_message('completed-goals-topic', message=json.dumps(goal_data))
+    """ goal_data = {
+        'title': goal.title,
+        'description': goal.description,
+        'createdDate': goal.created_date.strftime('%Y-%m-%d'),
+        'completedDate': timezone.now().date().strftime('%Y-%m-%d'),
+        'section': sectionName,
+        'subtasks': list(subtasks.values())
+    } """
+    
+    print("complete_goal data:")
+    print(json.dumps(serializer.data))
+    
+
+    kafka_producer.send_message(topic='completed-goals-topic', message=json.dumps(serializer.data))
         
-        goal.delete()
+    goal.delete()
         
-        return Response(serializer.data, status=status.HTTP_200_OK)
+    return Response(status=status.HTTP_204_NO_CONTENT)
+
 
 
 # ---------- Subtasks Views ----------

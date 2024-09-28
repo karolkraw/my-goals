@@ -11,8 +11,8 @@ class KafkaProducer:
         else:
             print(f'Message delivered to {msg.topic()} [{msg.partition()}]')
 
-    def send_message(self, topic, key, message):
-        self.producer.produce(topic=topic, key=key, value=message, callback=self.delivery_report)
+    def send_message(self, topic, message):
+        self.producer.produce(topic=topic, value=message, callback=self.delivery_report)
         self.producer.flush()
         
         
