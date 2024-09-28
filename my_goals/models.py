@@ -23,7 +23,6 @@ class SubTask(models.Model):
     description = models.TextField(default='')
     completed = models.BooleanField(default=False)
     created_date = models.DateField(default=get_current_date)
-    completed = models.BooleanField(default=False)
     completed_date = models.DateField(null=True)
     deadline = models.DateField(default=get_current_date) 
 
