@@ -31,8 +31,8 @@ services:
 
   celery:
     build:
-      context: .  # Path to the directory containing your Dockerfile
-      dockerfile: Dockerfile.celery  # Specify the new Dockerfile name
+      context: .
+      dockerfile: Dockerfile.celery
     depends_on:
       - redis
     environment:
@@ -64,8 +64,6 @@ services:
     ports:
       - "9308:9308"
     command: ["--kafka.server=kafka:9093"]
-    #environment:
-      #KAFKA_BROKERS: kafka:9093
     depends_on:
       - kafka
     restart: on-failure

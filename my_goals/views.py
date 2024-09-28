@@ -14,19 +14,12 @@ from .tasks import retrieve_goal_history
 import redis
 import os
 
-from confluent_kafka import Consumer
-
-
-
 r = redis.StrictRedis(host=os.getenv('REDIS', 'localhost'), port=6379, db=0)
 
-
 kafka_producer = KafkaProducer()
-kafka_consumer = KafkaConsumer()
 
 api_view(['GET'])
 def poll_goal_history(request, sectionName):
-    # Try fetching the result from Redis
     print("READ FROM REDIS")
     result = r.get(f"goal_history_{sectionName}")
 
@@ -34,12 +27,8 @@ def poll_goal_history(request, sectionName):
         # Decode the byte result to a string and then parse it as JSON
         result_str = result.decode('utf-8')
         result_json = json.loads(result_str)
-        print("REturn 200")
-
-        # If result exists in Redis, return it as JSON
         return JsonResponse({"data": result_json}, status=200)
     else:
-        # Still processing, no result yet
         return JsonResponse({"status": "processing"}, status=202)
 
 
@@ -49,56 +38,12 @@ def goal_list(request, sectionName):
         goals = Goal.objects.filter(section_name=sectionName).order_by('deadline').reverse()
         serializer = GoalWithSubtasksSerializer(goals, many=True)
         return Response(serializer.data)
-    """ producer = KafkaProducer()
-    
-    producer.send_message('retrieved-goals-topic', 'histdsfory', sectionName)
-    
-    
-    c = Consumer({
-        'bootstrap.servers': os.getenv('KAFKA_BOOTSTRAP_SERVERS', 'localhost:9092'),
-        'group.id': 'retrieved-goals-group',
-    })
-    
-    c.subscribe(['retrieved-goals-topic'])
-    
-    while True:
-        msg = c.poll(1.0)
-
-        if msg is None:
-            print("NONE")
-            continue
-        if msg.error():
-            print("Consumer error: {}".format(msg.error()))
-            continue
-
-        print('Received message: {}'.format(msg.value().decode('utf-8')))
-
-        c.close()
-        if request.method == 'GET':
-            goals = Goal.objects.filter(section_name=sectionName).order_by('deadline').reverse()
-            serializer = GoalWithSubtasksSerializer(goals, many=True)
-            return Response(serializer.data) """
     
 @api_view(['GET'])
 def goal_history_list(request, sectionName):
     if request.method == 'GET':
-        #goals = Goal.objects.filter(section_name=sectionName, is_history = True).order_by('completed_date').reverse()
-        #serializer = GoalWithSubtasksSerializer(goals, many=True)
-        #return Response(serializer.data)
-
-
-        #kafka_producer.send_message('history-topic', 'history', message=sectionName)
-        print("NNNNNNNN: ")
         task = retrieve_goal_history.delay(sectionName)
-        #task = retrieve_goal_history(sectionName)
-        print("YYYYYYYYYY: ")
-
-        # Return a response with task_id for polling
         return JsonResponse({"task_id": task.id, "status": "processing"}, status=202)
-    
-        #response_data = kafka_consumer.consume_messages()
-        #return Response(response_data, status=status.HTTP_200_OK)
-
 
 @api_view(['POST'])
 def goal_create(request, sectionName):
@@ -118,8 +63,6 @@ def goal_create(request, sectionName):
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-
-@csrf_exempt
 @api_view(['PUT'])
 def goal_update(request, sectionName, pk):
     try:
@@ -142,7 +85,6 @@ def goal_update(request, sectionName, pk):
             return Response(serializer.data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-@csrf_exempt
 @api_view(['DELETE'])
 def goal_delete(request, sectionName, pk):
     try:
