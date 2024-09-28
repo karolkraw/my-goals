@@ -14,7 +14,7 @@ def retrieve_goal_history(sectionName):
     producer = KafkaProducer()
     consumer = KafkaConsumer()
     
-    producer.send_message('history-topic', 'history', sectionName)
+    producer.send_message('history-topic', sectionName)
 
     response_data = consumer.consume_messages()
     serialized_data = json.dumps(response_data)
