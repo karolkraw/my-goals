@@ -34,11 +34,7 @@ def poll_goal_history(request, sectionName):
 def goal_list(request, sectionName):
     if request.method == 'GET':
         goals = Goal.objects.filter(section_name=sectionName).order_by('deadline').reverse()
-        print("goals goal list: ")
-        print(goals[0].deadline)
         serializer = GoalWithSubtasksSerializer(goals, many=True)
-        print("serializer goal list: ")
-        print(serializer.data)
         return Response(serializer.data)
     
 @api_view(['GET'])
@@ -64,6 +60,97 @@ def goal_create(request, sectionName):
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+@api_view(['DELETE'])
+def complete_goal(request, sectionName, goalTitle):
+    try:
+        goal = get_object_or_404(Goal, title=goalTitle, section_name=sectionName)
+    except (Goal.DoesNotExist):
+        return Response({"error": "Goal or not found."}, status=status.HTTP_404_NOT_FOUND)
+    #if request.method == 'PATCH':
+    #subtasks = goal.subtasks.all()
+    goal.completed_date = timezone.now().date()
+    serializer = GoalWithSubtasksKafkaMessageSerializer(goal)
+    
+    #serializer = GoalSerializer(goal)
+
+    """ goal_data = {
+        'title': goal.title,
+        'description': goal.description,
+        'createdDate': goal.created_date.strftime('%Y-%m-%d'),
+        'completedDate': timezone.now().date().strftime('%Y-%m-%d'),
+        'section': sectionName,
+        'subtasks': list(subtasks.values())
+    } """
+    
+    kafka_producer.send_message(topic='completed-goals-topic', message=json.dumps(serializer.data)) 
+    goal.delete()
+    return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+
+# ---------- Subtasks Views ----------
+
+
+    
+@api_view(['POST'])
+def subtask_create(request, sectionName, goalTitle):
+    print("rmkrtmrktm")
+    if request.method == 'POST':
+        try:
+            goal = Goal.objects.get(title=goalTitle, section_name=sectionName)
+        except Goal.DoesNotExist:
+            return Response({"error": "Goal not found."}, status=status.HTTP_404_NOT_FOUND)
+
+        data = request.data.copy()
+        data['goal'] = goal.id
+
+        serializer = SubTaskSerializer(data=data)
+        if serializer.is_valid():
+            subtask = serializer.save()
+            response_data = serializer.data
+            """ response_data['goal'] = {
+                'id': goal.id,
+                'title': goal.title,
+                'description': goal.description,
+                'created_date': goal.created_date,
+                'deadline': goal.deadline
+            }  """
+            return Response(response_data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+@api_view(['PATCH'])
+def subtask_complete(request, goalTitle, subtaskTitle, sectionName):
+    try:
+        goal = Goal.objects.get(title=goalTitle, section_name=sectionName)
+        subtask = SubTask.objects.get(title=subtaskTitle, goal=goal)
+    except (Goal.DoesNotExist, SubTask.DoesNotExist):
+        return Response({"error": "Goal or Subtask not found."}, status=status.HTTP_404_NOT_FOUND)
+
+    if request.method == 'PATCH':
+        completed_status = request.data.get('completed', None)
+
+        if completed_status is None:
+            return Response({"error": "Completed field is required."}, status=status.HTTP_400_BAD_REQUEST)
+
+        subtask.completed = completed_status
+        subtask.completed_date = timezone.now().date()
+        subtask.save()
+
+        serializer = SubTaskSerializer(subtask)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+@api_view(['DELETE'])
+def subtask_delete(request, goalTitle, subtaskTitle, sectionName):
+    try:
+        goal = Goal.objects.get(title=goalTitle, section_name=sectionName)
+        subtask = SubTask.objects.get(title=subtaskTitle, goal=goal)
+    except SubTask.DoesNotExist:
+        return Response(status=status.HTTP_404_NOT_FOUND)
+
+    if request.method == 'DELETE':
+        subtask.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+    
 """ @api_view(['PUT'])
 def goal_update(request, sectionName, pk):
     try:
@@ -96,85 +183,7 @@ def goal_delete(request, sectionName, pk):
     if request.method == 'DELETE':
         goal.delete()
         return Response(status=status.HTTP_204_NO_CONTENT) """
-
-@api_view(['DELETE'])
-def complete_goal(request, sectionName, goalTitle):
-    try:
-        goal = get_object_or_404(Goal, title=goalTitle, section_name=sectionName)
-    except (Goal.DoesNotExist):
-        return Response({"error": "Goal or not found."}, status=status.HTTP_404_NOT_FOUND)
-    #if request.method == 'PATCH':
-    #subtasks = goal.subtasks.all()
-    goal.completed_date = timezone.now().date()
-    serializer = GoalWithSubtasksKafkaMessageSerializer(goal)
-    
-    
-
-    #serializer = GoalSerializer(goal)
-
-    """ goal_data = {
-        'title': goal.title,
-        'description': goal.description,
-        'createdDate': goal.created_date.strftime('%Y-%m-%d'),
-        'completedDate': timezone.now().date().strftime('%Y-%m-%d'),
-        'section': sectionName,
-        'subtasks': list(subtasks.values())
-    } """
-    
-    print("complete_goal data:")
-    print(json.dumps(serializer.data))
-    
-
-    kafka_producer.send_message(topic='completed-goals-topic', message=json.dumps(serializer.data))
         
-    goal.delete()
-        
-    return Response(status=status.HTTP_204_NO_CONTENT)
-
-
-
-# ---------- Subtasks Views ----------
-
-
-    
-@api_view(['POST'])
-def subtask_create(request, sectionName, goalTitle):
-    print("rmkrtmrktm")
-    if request.method == 'POST':
-        try:
-            goal = Goal.objects.get(title=goalTitle, section_name=sectionName)
-            print("goal subtask create")
-            print(goal)
-        except Goal.DoesNotExist:
-            return Response({"error": "Goal not found."}, status=status.HTTP_404_NOT_FOUND)
-
-        data = request.data.copy()
-        print("bnm")
-        print(data['deadline'])
-        print("bnm")
-        data['goal'] = goal.id
-
-        serializer = SubTaskSerializer(data=data)
-        if serializer.is_valid():
-            print("rrrrrrr")
-            print(request.data)
-            subtask = serializer.save()
-            print("rtrtrtrttr")
-
-            print(serializer.data)
-
-
-            response_data = serializer.data
-            """ response_data['goal'] = {
-                'id': goal.id,
-                'title': goal.title,
-                'description': goal.description,
-                'created_date': goal.created_date,
-                'deadline': goal.deadline
-            }  """ # Include information about the goal (task) in the response
-            return Response(response_data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
 """ @api_view(['GET'])
 def subtask_detail(request, pk):
     try:
@@ -199,37 +208,3 @@ def subtask_update(request, pk):
             serializer.save()
             return Response(serializer.data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST) """
-    
-@api_view(['PATCH'])
-def subtask_complete(request, goalTitle, subtaskTitle, sectionName):
-    try:
-        # Retrieve the goal and subtask
-        goal = Goal.objects.get(title=goalTitle, section_name=sectionName)
-        subtask = SubTask.objects.get(title=subtaskTitle, goal=goal)
-    except (Goal.DoesNotExist, SubTask.DoesNotExist):
-        return Response({"error": "Goal or Subtask not found."}, status=status.HTTP_404_NOT_FOUND)
-
-    if request.method == 'PATCH':
-        completed_status = request.data.get('completed', None)
-
-        if completed_status is None:
-            return Response({"error": "Completed field is required."}, status=status.HTTP_400_BAD_REQUEST)
-
-        subtask.completed = completed_status
-        subtask.completed_date = timezone.now().date()
-        subtask.save()
-
-        serializer = SubTaskSerializer(subtask)
-        return Response(serializer.data, status=status.HTTP_200_OK)
-
-@api_view(['DELETE'])
-def subtask_delete(request, goalTitle, subtaskTitle, sectionName):
-    try:
-        goal = Goal.objects.get(title=goalTitle, section_name=sectionName)
-        subtask = SubTask.objects.get(title=subtaskTitle, goal=goal)
-    except SubTask.DoesNotExist:
-        return Response(status=status.HTTP_404_NOT_FOUND)
-
-    if request.method == 'DELETE':
-        subtask.delete()
-        return Response(status=status.HTTP_204_NO_CONTENT)
