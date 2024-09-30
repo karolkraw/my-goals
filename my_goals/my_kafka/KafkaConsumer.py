@@ -64,24 +64,24 @@ class KafkaConsumer:
                 goal = {
                     'title': goal_data['title'],
                     'description': goal_data['description'],
-                    'created_date': goal_data['createdDate'],
-                    'completed_date': goal_data['completedDate'],
+                    'createdDate': goal_data['createdDate'],
+                    'completedDate': goal_data['completedDate'],
                     'section_name': goal_data.get('section_name', ''),
                     'subtasks': []
                 }
-                print(f"Goal created: {goal['title']}")
+                #print(f"Goal created: {goal['createdDate']}")
 
                 for subtask_data in goal_data.get('subtasks', []):
                     subtask = {
                         'title': subtask_data['title'],
                         'description': subtask_data['description'],
                         'completed': subtask_data.get('completed', False),
-                        'created_date': subtask_data['createdDate'],
-                        'completed_date': subtask_data.get('completedDate', None),
+                        'createdDate': subtask_data['createdDate'],
+                        'completedDate': subtask_data.get('completedDate', None),
                         'deadline': subtask_data.get('deadline', None),
                     }
                     goal['subtasks'].append(subtask)
-                    print(f"Subtask created: {subtask['title']} for Goal: {goal['title']}")
+                    #print(f"Subtask created: {subtask['title']} for Goal: {goal['title']}")
 
                 goals.append(goal)
 
