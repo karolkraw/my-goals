@@ -18,7 +18,7 @@ def retrieve_goal_history(sectionName):
 
     response_data = consumer.consume_messages()
     serialized_data = json.dumps(response_data)
-    
+
     r.set(f"goal_history_{sectionName}", serialized_data)
 
     return serialized_data

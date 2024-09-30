@@ -20,11 +20,9 @@ kafka_producer = KafkaProducer()
 
 api_view(['GET'])
 def poll_goal_history(request, sectionName):
-    print("READ FROM REDIS")
     result = r.get(f"goal_history_{sectionName}")
 
     if result:
-        # Decode the byte result to a string and then parse it as JSON
         result_str = result.decode('utf-8')
         result_json = json.loads(result_str)
         return JsonResponse({"data": result_json}, status=200)
@@ -36,7 +34,11 @@ def poll_goal_history(request, sectionName):
 def goal_list(request, sectionName):
     if request.method == 'GET':
         goals = Goal.objects.filter(section_name=sectionName).order_by('deadline').reverse()
+        print("goals goal list: ")
+        print(goals[0].deadline)
         serializer = GoalWithSubtasksSerializer(goals, many=True)
+        print("serializer goal list: ")
+        print(serializer.data)
         return Response(serializer.data)
     
 @api_view(['GET'])
@@ -52,7 +54,6 @@ def goal_create(request, sectionName):
         request_data['section_name'] = sectionName
         serializer = GoalSerializer(data=request_data)
         if serializer.is_valid():
-            # Save the goal instance
             goal = serializer.save()
             
             # Handle nested subtasks if any
@@ -63,7 +64,7 @@ def goal_create(request, sectionName):
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-@api_view(['PUT'])
+""" @api_view(['PUT'])
 def goal_update(request, sectionName, pk):
     try:
         goal = Goal.objects.get(pk=pk)
@@ -83,7 +84,7 @@ def goal_update(request, sectionName, pk):
                 SubTask.objects.create(goal=updated_goal, **subtask_data)
                 
             return Response(serializer.data)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST) """
 
 @api_view(['DELETE'])
 def goal_delete(request, sectionName, pk):
@@ -142,17 +143,27 @@ def subtask_create(request, sectionName, goalTitle):
     if request.method == 'POST':
         try:
             goal = Goal.objects.get(title=goalTitle, section_name=sectionName)
+            print("goal subtask create")
+            print(goal)
         except Goal.DoesNotExist:
             return Response({"error": "Goal not found."}, status=status.HTTP_404_NOT_FOUND)
 
-        # Create a copy of the request data and add the goal to it
         data = request.data.copy()
+        print("bnm")
+        print(data['deadline'])
+        print("bnm")
         data['goal'] = goal.id
 
-        # Serialize the data
         serializer = SubTaskSerializer(data=data)
         if serializer.is_valid():
-            subtask = serializer.save()  # Save the subtask
+            print("rrrrrrr")
+            print(request.data)
+            subtask = serializer.save()
+            print("rtrtrtrttr")
+
+            print(serializer.data)
+
+
             response_data = serializer.data
             """ response_data['goal'] = {
                 'id': goal.id,
@@ -175,7 +186,7 @@ def subtask_detail(request, pk):
         serializer = SubTaskSerializer(subtask)
         return Response(serializer.data)
 
-@api_view(['PUT'])
+""" @api_view(['PUT'])
 def subtask_update(request, pk):
     try:
         subtask = SubTask.objects.get(pk=pk)
@@ -187,7 +198,7 @@ def subtask_update(request, pk):
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST) """
     
 @api_view(['PATCH'])
 def subtask_complete(request, goalTitle, subtaskTitle, sectionName):
@@ -205,6 +216,7 @@ def subtask_complete(request, goalTitle, subtaskTitle, sectionName):
             return Response({"error": "Completed field is required."}, status=status.HTTP_400_BAD_REQUEST)
 
         subtask.completed = completed_status
+        subtask.completed_date = timezone.now().date()
         subtask.save()
 
         serializer = SubTaskSerializer(subtask)
