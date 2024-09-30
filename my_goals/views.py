@@ -86,7 +86,7 @@ def goal_update(request, sectionName, pk):
             return Response(serializer.data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST) """
 
-@api_view(['DELETE'])
+""" @api_view(['DELETE'])
 def goal_delete(request, sectionName, pk):
     try:
         goal = Goal.objects.get(pk=pk)
@@ -95,7 +95,7 @@ def goal_delete(request, sectionName, pk):
 
     if request.method == 'DELETE':
         goal.delete()
-        return Response(status=status.HTTP_204_NO_CONTENT)
+        return Response(status=status.HTTP_204_NO_CONTENT) """
 
 @api_view(['DELETE'])
 def complete_goal(request, sectionName, goalTitle):
@@ -175,7 +175,7 @@ def subtask_create(request, sectionName, goalTitle):
             return Response(response_data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-@api_view(['GET'])
+""" @api_view(['GET'])
 def subtask_detail(request, pk):
     try:
         subtask = SubTask.objects.get(pk=pk)
@@ -184,7 +184,7 @@ def subtask_detail(request, pk):
 
     if request.method == 'GET':
         serializer = SubTaskSerializer(subtask)
-        return Response(serializer.data)
+        return Response(serializer.data) """
 
 """ @api_view(['PUT'])
 def subtask_update(request, pk):
