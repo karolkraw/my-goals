@@ -8,7 +8,7 @@ def get_current_date():
 
 class Goal(models.Model):
     title = models.CharField(max_length=255, unique=True)
-    description = models.TextField()
+    description = models.TextField(default='')
     created_date = models.DateField(default=get_current_date)
     completed_date = models.DateField(null=True)
     deadline = models.DateField(default=get_current_date)
