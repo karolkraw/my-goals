@@ -6,8 +6,8 @@ urlpatterns = [
     path('goals/<str:sectionName>/', views.goal_list, name='goal-list'),
     path('goals/history/<str:sectionName>/', views.goal_history_list, name='history-list'),
     path('goals/create/<str:sectionName>/', views.goal_create, name='goal-create'),
-    #path('goals/update/<str:sectionName>/<int:pk>/', views.goal_update, name='goal-update'),
-    #path('goals/delete/<str:sectionName>/<int:pk>/', views.goal_delete, name='goal-delete'),
+    path('goals/update/<str:sectionName>/<str:goalTitle>/', views.goal_update, name='goal-update'),
+    path('goals/delete/<str:sectionName>/<str:goalTitle>/', views.goal_delete, name='goal-delete'),
     path('goals/complete/<str:sectionName>/<str:goalTitle>/', views.complete_goal, name='complete-goal'),
     path('goals/poll_history/<str:sectionName>/', views.poll_goal_history, name='poll-goal-history'),
 

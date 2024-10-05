@@ -69,7 +69,6 @@ class KafkaConsumer:
                     'section_name': goal_data.get('section_name', ''),
                     'subtasks': []
                 }
-                #print(f"Goal created: {goal['createdDate']}")
 
                 for subtask_data in goal_data.get('subtasks', []):
                     subtask = {
@@ -81,7 +80,6 @@ class KafkaConsumer:
                         'deadline': subtask_data.get('deadline', None),
                     }
                     goal['subtasks'].append(subtask)
-                    #print(f"Subtask created: {subtask['title']} for Goal: {goal['title']}")
 
                 goals.append(goal)
 

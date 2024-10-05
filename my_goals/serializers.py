@@ -14,10 +14,8 @@ class SubTaskSerializer(serializers.ModelSerializer):
         fields = ['title', 'description', 'createdDate', 'deadline', 'completedDate', 'completed', 'goal']
 
     def create(self, validated_data):
-        print("lllllllllllllllllllgflllll")
         print(validated_data)
         subtask = SubTask.objects.create(**validated_data)
-        print("gfmdkgmdfkgmdkfg")
         print(subtask.deadline)
         return subtask 
     
@@ -64,8 +62,9 @@ class GoalWithSubtasksKafkaMessageSerializer(serializers.ModelSerializer):
     def get_completedDate(self, obj):
         return obj.completed_date.strftime('%d-%m-%Y') if obj.completed_date else None
 
-class GoalSerializer(serializers.ModelSerializer):
+class GoalCreateSerializer(serializers.ModelSerializer):
     #subtasks = SubTaskSerializer(many=True, write_only=True)  # Use write_only for POST and PUT requests
+    description = serializers.CharField(allow_blank=True)
 
     class Meta:
         model = Goal
@@ -79,6 +78,18 @@ class GoalSerializer(serializers.ModelSerializer):
         """ for subtask_data in subtasks_data:
             SubTask.objects.create(goal=goal, **subtask_data) """
         return goal
+    
+class GoalUpdateSerializer(serializers.ModelSerializer):
+    #subtasks = SubTaskSerializer(many=True, write_only=True)  # Use write_only for POST and PUT requests
+    title = serializers.CharField(required=False)
+    description = serializers.CharField(required=False, allow_blank=True)
+    deadline = serializers.CharField(required=False)
+
+    class Meta:
+        model = Goal
+        fields = '__all__'
+        read_only_fields = ['created_date', 'subtasks']
+
 
     def update(self, instance, validated_data):
         subtasks_data = validated_data.pop('subtasks', [])
@@ -89,7 +100,7 @@ class GoalSerializer(serializers.ModelSerializer):
         instance.save()
 
         # Handle nested subtasks
-        existing_subtasks = {subtask.id: subtask for subtask in instance.subtasks.all()}
+        """ existing_subtasks = {subtask.id: subtask for subtask in instance.subtasks.all()}
         for subtask_data in subtasks_data:
             subtask_id = subtask_data.get('id')
             if subtask_id and subtask_id in existing_subtasks:
@@ -99,6 +110,6 @@ class GoalSerializer(serializers.ModelSerializer):
                 subtask.deadline = subtask_data.get('deadline', subtask.deadline)
                 subtask.save()
             else:
-                SubTask.objects.create(goal=instance, **subtask_data)
+                SubTask.objects.create(goal=instance, **subtask_data) """
         
         return instance
