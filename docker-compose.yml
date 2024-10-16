@@ -24,6 +24,26 @@ services:
       retries: 10
       start_period: 10s
 
+  mysql:
+    image: mysql:5.7
+    environment:
+      MYSQL_DATABASE: my-daily-track
+      MYSQL_ROOT_PASSWORD: admin
+    ports:
+      - "3309:3306"
+
+  spring-boot-app:
+    image: karol8650/my-daily-track-backend:latest
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/my-daily-track
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: admin
+    depends_on:
+      - mysql
+    restart: always
+    ports:
+      - "8080:8080"
+
   redis:
     image: "redis"
     ports:
