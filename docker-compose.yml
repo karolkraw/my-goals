@@ -9,10 +9,13 @@ services:
     image: wurstmeister/kafka
     ports:
       - "9092:9092"
+      - "9093:9093"
     environment:
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
-      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092,PLAINTEXT_DOCKER://kafka:9093
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092,PLAINTEXT_DOCKER://0.0.0.0:9093
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_DOCKER:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT_DOCKER
     depends_on:
       - zookeeper
     healthcheck:
@@ -30,12 +33,12 @@ services:
       - "3309:3306"
 
   spring-boot-app:
-    image: karol8650/my-daily-track-backend:latest
+    image: karol8650/my-daily-track-backend:v1.1
     environment:
       SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/my-daily-track
       SPRING_DATASOURCE_USERNAME: root
       SPRING_DATASOURCE_PASSWORD: admin
-      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9093
     depends_on:
       - mysql
       - kafka
