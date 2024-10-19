@@ -19,7 +19,28 @@ RUN apk update && apk add --no-cache \
     postgresql-dev \
     bash \
     curl \
-    librdkafka-dev  # Add librdkafka-dev for confluent-kafka
+    git \
+    cmake \
+    openssl-dev \
+    zlib-dev \
+    pkgconfig \
+    libc-dev \
+    linux-headers \
+    libc-dev \
+    bash \
+    make \
+    cmake \
+    g++  # Add g++ for C++ dependencies
+
+# Install librdkafka from source
+RUN git clone https://github.com/edenhill/librdkafka.git && \
+    cd librdkafka && \
+    git checkout v2.5.3 && \
+    mkdir build && cd build && \
+    cmake .. && \
+    make && \
+    make install && \
+    ldconfig
 
 # Install Python dependencies
 COPY requirements.txt /app/
