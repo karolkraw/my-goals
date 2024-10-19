@@ -10,6 +10,7 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/4.2/ref/settings/
 """
 
+from datetime import timedelta
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -38,6 +39,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'rest_framework',
+    'rest_framework_simplejwt',
     'my_goals',
     'corsheaders',
 ]
@@ -153,7 +155,6 @@ LOGGING = {
     },
 }
 
-
 CELERY_BROKER_URL = 'redis://localhost:6379/0'
 
 # Optional: Celery result backend (Redis)
@@ -163,3 +164,24 @@ CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
 CELERY_TIMEZONE = 'UTC'
+
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'my_goals_project.custom_auth.CustomJWTAuthentication',
+    ),
+   # 'DEFAULT_AUTHENTICATION_CLASSES': (
+     #   'rest_framework_simplejwt.authentication.JWTAuthentication',  # Use SimpleJWT's authentication
+   # ),
+    'DEFAULT_PERMISSION_CLASSES': (
+        'rest_framework.permissions.IsAuthenticated',  # Ensure all views require authentication
+    ),
+}
+
+# SimpleJWT Settings (to replace JWT_AUTH)
+SIMPLE_JWT = {
+    'SIGNING_KEY': '5999ba0174c3218da4013fb6a1062a698702a2956ccff0bf57b2f37aa849ec7f',
+    'ALGORITHM': 'HS512',
+    'ACCESS_TOKEN_LIFETIME': timedelta(hours=1),
+    'AUTH_HEADER_TYPES': ('Bearer',),
+}
+
