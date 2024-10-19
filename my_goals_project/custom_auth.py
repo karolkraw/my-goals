@@ -35,38 +35,3 @@ class CustomJWTAuthentication(BaseAuthentication):
             raise AuthenticationFailed('Token has expired')
         except jwt.InvalidTokenError:
             raise AuthenticationFailed('Invalid token')
-
-""" def jwt_decode_handler(token):
-    try:  
-        payload = jwt.decode(token, settings.SIMPLE_JWT['SIGNING_KEY'], algorithms=[settings.SIMPLE_JWT['ALGORITHM']])
-        logger.warning(f"Decoded token: {payload}")
-        return payload
-    except jwt.ExpiredSignatureError:
-        logger.warning("Token has expired")
-        raise
-    except jwt.InvalidTokenError:
-        logger.warning("Invalid token")
-        raise
-
-class CustomJWTAuthentication(JWTAuthentication):
-    def authenticate(self, request):
-        token = request.META.get('HTTP_AUTHORIZATION')
-        if not token:
-            logger.warning("No authorization token found")
-            return None
-        
-        if token.startswith('Bearer '):
-            token = token[7:]  # Remove 'Bearer ' prefix
-        else:
-            logger.warning("Invalid authorization header format")
-            return None
-        
-        try:
-            decoded_token = jwt_decode_handler(token)
-            # Here you would typically set the user object on the request
-            # request.user = User.objects.get(id=decoded_token['user_id'])
-            # request.auth = decoded_token
-            return super().authenticate(request)
-        except Exception as e:
-            logger.warning(f"JWT decode error: {str(e)}")
-            return None """
