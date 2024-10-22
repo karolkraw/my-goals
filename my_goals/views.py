@@ -33,14 +33,17 @@ def poll_goal_history(request, sectionName):
 @api_view(['GET'])
 def goal_list(request, sectionName):
     if request.method == 'GET':
-        goals = Goal.objects.filter(section_name=sectionName).order_by('deadline').reverse()
+        goals = Goal.objects.filter(
+            section_name=sectionName,
+            username=request.user.username
+        ).order_by('-deadline') 
         serializer = GoalWithSubtasksSerializer(goals, many=True)
         return Response(serializer.data)
     
 @api_view(['GET'])
 def goal_history_list(request, sectionName):
     if request.method == 'GET':
-        task = retrieve_goal_history.delay(sectionName)
+        task = retrieve_goal_history.delay(sectionName, request.user.username)
         return JsonResponse({"task_id": task.id, "status": "processing"}, status=202)
 
 @api_view(['POST'])
@@ -48,6 +51,7 @@ def goal_create(request, sectionName):
     if request.method == 'POST':
         request_data = request.data.copy() 
         request_data['section_name'] = sectionName
+        request_data['username'] = request.user.username
         serializer = GoalCreateSerializer(data=request_data)
         if serializer.is_valid():
             goal = serializer.save()
@@ -62,7 +66,7 @@ def goal_create(request, sectionName):
 @api_view(['DELETE'])
 def complete_goal(request, sectionName, goalTitle):
     try:
-        goal = get_object_or_404(Goal, title=goalTitle, section_name=sectionName)
+        goal = get_object_or_404(Goal, title=goalTitle, section_name=sectionName, username = request.user.username)
     except (Goal.DoesNotExist):
         return Response({"error": "Goal or not found."}, status=status.HTTP_404_NOT_FOUND)
     #if request.method == 'PATCH':
@@ -81,20 +85,27 @@ def complete_goal(request, sectionName, goalTitle):
         'subtasks': list(subtasks.values())
     } """
     
-    kafka_producer.send_message(topic='completed-goals-topic', message=json.dumps(serializer.data)) 
+    goal_data = serializer.data
+    goal_data['username'] = request.user.username
+    
+    print("MMMMMMMMMMMMMMMM")
+    print(json.dumps(goal_data))
+    
+    kafka_producer.send_message(topic='completed-goals-topic', message=json.dumps(goal_data)) 
     goal.delete()
     return Response(status=status.HTTP_204_NO_CONTENT)
 
 @api_view(['PUT'])
 def goal_update(request, sectionName, goalTitle):
     try:
-        goal = get_object_or_404(Goal, title=goalTitle, section_name=sectionName)
+        goal = get_object_or_404(Goal, title=goalTitle, section_name=sectionName, username = request.user.username)
     except (Goal.DoesNotExist):
         return Response({"error": "Goal not found."}, status=status.HTTP_404_NOT_FOUND)
 
     if request.method == 'PUT':
         request_data = request.data.copy() 
         request_data['section_name'] = sectionName
+        request_data['username'] = request.user.username
         #serializer = GoalUpdateSerializer(data=request_data)
         serializer = GoalUpdateSerializer(goal, data=request_data, partial=True)
         #serializer = GoalSerializer(goal, data=request.data)
@@ -114,7 +125,7 @@ def goal_update(request, sectionName, goalTitle):
 @api_view(['DELETE'])
 def goal_delete(request, sectionName, goalTitle):
     try:
-        goal = get_object_or_404(Goal, title=goalTitle, section_name=sectionName)
+        goal = get_object_or_404(Goal, title=goalTitle, section_name=sectionName, username = request.user.username)
     except (Goal.DoesNotExist):
         return Response({"error": "Goal not found."}, status=status.HTTP_404_NOT_FOUND)
 
@@ -129,10 +140,9 @@ def goal_delete(request, sectionName, goalTitle):
     
 @api_view(['POST'])
 def subtask_create(request, sectionName, goalTitle):
-    print("rmkrtmrktm")
     if request.method == 'POST':
         try:
-            goal = Goal.objects.get(title=goalTitle, section_name=sectionName)
+            goal = Goal.objects.get(title=goalTitle, section_name=sectionName, username = request.user.username)
         except Goal.DoesNotExist:
             return Response({"error": "Goal not found."}, status=status.HTTP_404_NOT_FOUND)
 
@@ -156,7 +166,7 @@ def subtask_create(request, sectionName, goalTitle):
 @api_view(['PATCH'])
 def subtask_complete(request, goalTitle, subtaskTitle, sectionName):
     try:
-        goal = Goal.objects.get(title=goalTitle, section_name=sectionName)
+        goal = Goal.objects.get(title=goalTitle, section_name=sectionName, username = request.user.username)
         subtask = SubTask.objects.get(title=subtaskTitle, goal=goal)
     except (Goal.DoesNotExist, SubTask.DoesNotExist):
         return Response({"error": "Goal or Subtask not found."}, status=status.HTTP_404_NOT_FOUND)
@@ -177,7 +187,7 @@ def subtask_complete(request, goalTitle, subtaskTitle, sectionName):
 @api_view(['DELETE'])
 def subtask_delete(request, goalTitle, subtaskTitle, sectionName):
     try:
-        goal = Goal.objects.get(title=goalTitle, section_name=sectionName)
+        goal = Goal.objects.get(title=goalTitle, section_name=sectionName, username = request.user.username)
         subtask = SubTask.objects.get(title=subtaskTitle, goal=goal)
     except SubTask.DoesNotExist:
         return Response(status=status.HTTP_404_NOT_FOUND)
