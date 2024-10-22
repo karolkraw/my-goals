@@ -10,11 +10,15 @@ r = redis.StrictRedis(host=os.getenv('REDIS', 'localhost'), port=6379, db=0)
 
 
 @shared_task
-def retrieve_goal_history(sectionName):
+def retrieve_goal_history(sectionName, username):
     producer = KafkaProducer()
     consumer = KafkaConsumer()
     
-    producer.send_message('history-topic', sectionName)
+    historyRequestKafka = {
+        'sectionName': sectionName,
+        'username': username
+    }
+    producer.send_message('history-topic', historyRequestKafka)
 
     response_data = consumer.consume_messages()
     serialized_data = json.dumps(response_data)

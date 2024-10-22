@@ -22,13 +22,14 @@ class CustomJWTAuthentication(BaseAuthentication):
             payload = jwt.decode(token, settings.SIMPLE_JWT['SIGNING_KEY'], algorithms=[settings.SIMPLE_JWT['ALGORITHM']])
             
             # Extract user_id (or other claims)
-            user_id = payload.get('user_id')
+            #user_id = payload.get('user_id')
+            username = payload.get('username')
 
-            if not user_id:
-                raise AuthenticationFailed('User ID not found in token')
+            """ if not user_id:
+                raise AuthenticationFailed('User ID not found in token') """
 
             # Create a simple user object
-            user = type('User', (), {'id': user_id, 'is_authenticated': True})()  # Add 'is_authenticated': True
+            user = type('User', (), {'username': username, 'is_authenticated': True})()  # Add 'is_authenticated': True
             return (user, token)
 
         except jwt.ExpiredSignatureError:

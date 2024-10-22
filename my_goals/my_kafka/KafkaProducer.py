@@ -1,3 +1,4 @@
+import json
 from confluent_kafka import Producer
 import os
 
@@ -12,7 +13,8 @@ class KafkaProducer:
             print(f'Message delivered to {msg.topic()} [{msg.partition()}]')
 
     def send_message(self, topic, message):
-        self.producer.produce(topic=topic, value=message, callback=self.delivery_report)
+        message_json = json.dumps(message)
+        self.producer.produce(topic=topic, value=message_json, callback=self.delivery_report)
         self.producer.flush()
         
         
