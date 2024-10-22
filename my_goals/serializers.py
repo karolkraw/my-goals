@@ -24,6 +24,28 @@ class SubTaskSerializer(serializers.ModelSerializer):
 
     def get_completedDate(self, obj):
         return obj.completed_date.strftime('%d-%m-%Y') if obj.completed_date else None
+    
+class SubTaskKafkaMessageSerializer(serializers.ModelSerializer):
+    #createdDate = serializers.DateField(source='created_date')
+    createdDate = serializers.SerializerMethodField()
+    completedDate = serializers.SerializerMethodField()
+
+
+    class Meta:
+        model = SubTask
+        fields = ['title', 'description', 'createdDate', 'completedDate']
+
+    def create(self, validated_data):
+        print(validated_data)
+        subtask = SubTask.objects.create(**validated_data)
+        print(subtask.deadline)
+        return subtask 
+    
+    def get_createdDate(self, obj):
+        return obj.created_date.strftime('%d-%m-%Y')
+
+    def get_completedDate(self, obj):
+        return obj.completed_date.strftime('%d-%m-%Y') if obj.completed_date else None
 
 class GoalWithSubtasksSerializer(serializers.ModelSerializer):
     subtasks = SubTaskSerializer(many=True, read_only=True)
@@ -47,7 +69,7 @@ class GoalWithSubtasksSerializer(serializers.ModelSerializer):
         return obj.completed_date.strftime('%d-%m-%Y') if obj.completed_date else None
     
 class GoalWithSubtasksKafkaMessageSerializer(serializers.ModelSerializer):
-    subtasks = SubTaskSerializer(many=True, read_only=True)
+    subtasks = SubTaskKafkaMessageSerializer(many=True, read_only=True)
     createdDate = serializers.SerializerMethodField()
     completedDate = serializers.SerializerMethodField()
     sectionName = serializers.CharField(source='section_name')
