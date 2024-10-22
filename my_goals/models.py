@@ -13,6 +13,7 @@ class Goal(models.Model):
     completed_date = models.DateField(null=True)
     deadline = models.DateField(default=get_current_date)
     section_name = models.CharField(max_length=255)
+    username = models.CharField(max_length=255)
 
     """  def __str__(self):
         return self.title """
