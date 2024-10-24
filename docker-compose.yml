@@ -24,27 +24,49 @@ services:
       retries: 10
       start_period: 10s
 
-  #mysql:
-    #image: mysql:5.7
-    #environment:
-      #MYSQL_DATABASE: my-daily-track
-      #MYSQL_ROOT_PASSWORD: admin
-    #ports:
-      #- "3309:3306"
+  mysql:
+    image: mysql:5.7
+    environment:
+      MYSQL_DATABASE: my-daily-track
+      MYSQL_ROOT_PASSWORD: admin
+    ports:
+      - "3309:3306"
 
-  #spring-boot-app:
-    #image: karol8650/my-daily-track-backend:v1.1
-    #environment:
-      #SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/my-daily-track
-      #SPRING_DATASOURCE_USERNAME: root
-      #SPRING_DATASOURCE_PASSWORD: admin
-      #SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9093
-    #depends_on:
-      #- mysql
-      #- kafka
-    #restart: always
-    #ports:
-      #- "8080:8080"
+  spring-boot-app:
+    image: karol8650/my-daily-track-backend:v1.1
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/my-daily-track
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: admin
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9093
+    depends_on:
+      - mysql
+      - kafka
+    restart: always
+    ports:
+      - "8080:8080"
+
+  django-app:
+    image: karol8650/my-goals:v1.1
+    environment:
+      - DB_HOST=mysql
+      - DB_NAME=my-goals
+      - DB_USER=root
+      - DB_PASSWORD=admin
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:9093
+    ports:
+      - "8000:8000"
+    depends_on:
+      - mysql
+      - kafka
+      - redis
+
+  angular-app:
+    image: karol8650/my-daily-track-frontend:v1.1
+    ports:
+      - "4200:80"
 
   redis:
     image: "redis"

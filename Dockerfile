@@ -1,60 +1,35 @@
-# Base image
-FROM python:3.9-alpine
+# Use an official Python runtime as a parent image
+FROM python:3.10-slim
 
-# Environment variables
-ENV PYTHONDONTWRITEBYTECODE=1
-ENV PYTHONUNBUFFERED=1
+# Set environment variables
+ENV PYTHONDONTWRITEBYTECODE 1  # Prevents Python from writing .pyc files to disk
+ENV PYTHONUNBUFFERED 1  # Ensures that Python output is logged directly
 
-# Set working directory
+# Set the working directory in the container
 WORKDIR /app
 
-# Install system dependencies
-RUN apk update && apk add --no-cache \
+# Install system dependencies, including MariaDB development libraries
+RUN apt-get update && apt-get install -y \
     gcc \
+    python3-dev \
     musl-dev \
-    mariadb-dev \
-    linux-headers \
-    libffi-dev \
-    build-base \
-    postgresql-dev \
-    bash \
-    curl \
-    git \
-    cmake \
-    openssl-dev \
-    zlib-dev \
-    pkgconfig \
     libc-dev \
-    linux-headers \
-    libc-dev \
-    bash \
-    make \
-    cmake \
-    g++  # Add g++ for C++ dependencies
+    libmariadb-dev \
+    --no-install-recommends && \
+    rm -rf /var/lib/apt/lists/*
 
-# Install librdkafka from source
-RUN git clone https://github.com/edenhill/librdkafka.git && \
-    cd librdkafka && \
-    git checkout v2.5.3 && \
-    mkdir build && cd build && \
-    cmake .. && \
-    make && \
-    make install && \
-    ldconfig
+# Copy the requirements file into the container
+COPY requirements.txt /app/
 
 # Install Python dependencies
-COPY requirements.txt /app/
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --upgrade pip && \
+    pip install --no-cache-dir -r requirements.txt
 
-# Copy project files
+# Copy the Django project code into the container
 COPY . /app/
 
-# Expose port 8000
+# Expose the port on which the app runs
 EXPOSE 8000
 
-# Add a non-root user for security
-RUN adduser -D myuser
-USER myuser
-
-# Command to run the Django server
+# Run the Django development server
 CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]

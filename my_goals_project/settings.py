@@ -26,6 +26,7 @@ SECRET_KEY = 'django-insecure-3)ytuf($g1(y$=k)-301s2-9yhg4j-!k-sfrvbw+47)hp$+@!p
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
+#ALLOWED_HOSTS = ['localhost', '127.0.0.1', '0.0.0.0']
 ALLOWED_HOSTS = []
 
 
@@ -86,7 +87,8 @@ DATABASES = {
         'NAME': 'my-goals',
         'USER': 'root',
         'PASSWORD': 'admin',
-        'HOST': 'localhost',  
+        #'HOST': 'host.docker.internal',  # Connect to host machine's MySQL
+        'HOST': 'mysql',  
         'PORT': '3306',
     }
 }
