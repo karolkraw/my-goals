@@ -20,15 +20,22 @@ services:
       - zookeeper
     healthcheck:
       test: ["CMD", "nc", "-z", "localhost", "9092"]
-      interval: 10s
+      interval: 2s
       retries: 10
-      start_period: 10s
 
   mysql:
-    image: mysql:5.7
+    image: mysql:8.0
     environment:
-      MYSQL_DATABASE: my-daily-track
       MYSQL_ROOT_PASSWORD: admin
+    volumes:
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+      - mysql_data:/var/lib/mysql
+      
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-padmin"]
+      interval: 2s
+      timeout: 5s
+      retries: 10
     ports:
       - "3309:3306"
 
@@ -40,8 +47,10 @@ services:
       SPRING_DATASOURCE_PASSWORD: admin
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9093
     depends_on:
-      - mysql
-      - kafka
+      mysql:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
     restart: always
     ports:
       - "8080:8080"
@@ -58,13 +67,22 @@ services:
       - KAFKA_BOOTSTRAP_SERVERS=kafka:9093
     ports:
       - "8000:8000"
+    restart: always
     depends_on:
-      - mysql
-      - kafka
-      - redis
+      mysql:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    entrypoint: >
+      sh -c "
+      python manage.py migrate &&
+      python manage.py runserver 0.0.0.0:8000
+      "
 
   angular-app:
-    image: karol8650/my-daily-track-frontend:v1.1
+    image: karol8650/my-daily-track-frontend:v1.3
     ports:
       - "4200:80"
 
@@ -72,6 +90,11 @@ services:
     image: "redis"
     ports:
       - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 2s
+      timeout: 5s
+      retries: 10
 
   celery:
     build:
@@ -115,3 +138,5 @@ services:
 
 volumes:
   grafana-storage:
+  mysql_data:
+    driver: local
